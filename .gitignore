@@ -1,0 +1,44 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Variables de entorno (puede haber URLs y claves). Se versiona solo el ejemplo
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Caché de herramientas
+.vite/
+.eslintcache
+.oxlintcache
+.cache/
+.parcel-cache/
+coverage/
+.nyc_output/
+
+# Editores y sistema operativo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.cursor/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos temporales
+*.local
+*.tmp
