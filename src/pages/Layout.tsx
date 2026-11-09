@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { hasTenantRole, selectIsAuthenticated, useAuthStore } from '@/store/auth'
+import { Icon } from '@/components/Icon'
+import { hasGlobalRole, hasTenantRole, selectIsAuthenticated, useAuthStore } from '@/store/auth'
 
 export function Layout() {
   const isAuth = useAuthStore(selectIsAuthenticated)
   const email = useAuthStore((s) => s.email)
   const isStaff = useAuthStore((s) => hasTenantRole(s, 'TENANT_ADMIN', 'EVENT_ORGANIZER'))
+  const isPlatformAdmin = useAuthStore((s) => hasGlobalRole(s, 'PLATFORM_ADMIN'))
   const tenantRoles = useAuthStore((s) => s.tenantRoles)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const setActiveTenant = useAuthStore((s) => s.setActiveTenant)
@@ -30,12 +32,16 @@ export function Layout() {
         <nav>
           {isAuth && <NavLink to="/me/bookings" className={({ isActive }) => (isActive ? 'active' : '')}>Mis reservas</NavLink>}
           {isStaff && <NavLink to="/staff" className={({ isActive }) => (isActive ? 'active' : '')}>Panel</NavLink>}
+          {isPlatformAdmin && <NavLink to="/admin/categories" className={({ isActive }) => (isActive ? 'active' : '')}>Categorías</NavLink>}
+          {isPlatformAdmin && <NavLink to="/admin/roles" className={({ isActive }) => (isActive ? 'active' : '')}>Roles</NavLink>}
           {tenants.length > 1 && (
             <select aria-label="Tenant activo" value={activeTenantId ?? ''} onChange={(e) => setActiveTenant(e.target.value)}>
               {tenants.map((t) => <option key={t}>{t}</option>)}
             </select>
           )}
-          <button className="icon-btn" onClick={toggleTheme} aria-label="Cambiar tema">{theme === 'dark' ? '☀️' : '🌙'}</button>
+          <button className="icon-btn" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+          </button>
           {isAuth ? (
             <>
               <span className="avatar" title={email ?? ''}>{email?.[0]?.toUpperCase()}</span>

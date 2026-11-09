@@ -19,6 +19,8 @@ function upload(id: string, kind: 'logo' | 'banner', file: File) {
 
 export const categoriesApi = {
   list: () => requestData<Category[]>('/api/v1/categories'),
+  /** Incluye inactivas. Solo PLATFORM_ADMIN; el catálogo público sigue en `list`. */
+  manage: () => requestData<Category[]>('/api/v1/categories', { query: { status: 'all' } }),
   byId: (id: string) => requestData<Category>(`/api/v1/categories/${id}`),
   // PLATFORM_ADMIN
   create: (body: CreateCategoryRequest) => requestData<Category>('/api/v1/categories', { method: 'POST', body }),
