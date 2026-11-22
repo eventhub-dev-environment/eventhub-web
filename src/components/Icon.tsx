@@ -1,4 +1,4 @@
-type IconName = 'tag' | 'plus' | 'pencil' | 'search' | 'sun' | 'moon' | 'x' | 'shield'
+type IconName = 'tag' | 'plus' | 'pencil' | 'search' | 'sun' | 'moon' | 'x' | 'shield' | 'sliders' | 'calendar' | 'ticket' | 'menu'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   tag: (
@@ -42,6 +42,38 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M12 3 5 6v6c0 4.2 2.8 7.4 7 9 4.2-1.6 7-4.8 7-9V6l-7-3Z" />
       <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  sliders: (
+    <>
+      <path d="M4 6h10" />
+      <path d="M18 6h2" />
+      <path d="M16 4v4" />
+      <path d="M4 12h2" />
+      <path d="M10 12h10" />
+      <path d="M8 10v4" />
+      <path d="M4 18h6" />
+      <path d="M14 18h6" />
+      <path d="M12 16v4" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M8 3v4M16 3v4M4 10h16" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </>
+  ),
+  ticket: (
+    <>
+      <path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z" />
+      <path d="M12 6v12" />
     </>
   ),
 }

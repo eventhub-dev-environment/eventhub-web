@@ -17,7 +17,7 @@ export function EventsPage() {
   )
 
   return (
-    <>
+    <div className="catalog">
       <section className="hero">
         <h1>Encuentra tu próximo <span>plan</span></h1>
         <p>Carreras, conciertos y encuentros cerca de ti. Reserva en segundos y paga seguro.</p>
@@ -59,6 +59,6 @@ export function EventsPage() {
           )
         })}
       </div>
-    </>
+    </div>
   )
 }

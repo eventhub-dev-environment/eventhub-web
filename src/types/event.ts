@@ -87,7 +87,8 @@ export interface CreateEventRequest {
   location: string
   status?: EventStatus
   eventType?: string // máx. 50
-  ticketTiers?: Omit<TicketTier, 'id'>[]
+  /** El identificador de cada tarifa es obligatorio: el servicio lo exige y no se puede corregir después. */
+  ticketTiers?: TicketTier[]
   sessions?: Omit<EventSession, 'id'>[]
   registrationFields?: RegistrationField[]
   branding?: EventBranding

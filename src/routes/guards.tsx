@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { hasTenantRole, selectIsAuthenticated, useAuthStore } from '@/store/auth'
+import { hasTenantRole, selectIsAuthenticated, selectIsTenantAdmin, useAuthStore } from '@/store/auth'
 import type { GlobalRole, TenantRole } from '@/types/auth'
 
 export function RequireAuth() {
@@ -15,5 +15,10 @@ export function RequireGlobalRole({ role }: { role: GlobalRole }) {
 
 export function RequireTenantRole({ roles }: { roles: TenantRole[] }) {
   const ok = useAuthStore((s) => hasTenantRole(s, ...roles))
+  return ok ? <Outlet /> : <Navigate to="/" replace />
+}
+
+export function RequireTenantAdmin() {
+  const ok = useAuthStore(selectIsTenantAdmin)
   return ok ? <Outlet /> : <Navigate to="/" replace />
 }

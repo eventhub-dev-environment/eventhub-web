@@ -9,6 +9,8 @@ export const eventsApi = {
   create: (body: CreateEventRequest) => requestData<EventDto>('/api/v1/events', { method: 'POST', body }),
   uploadLogo: (id: string, file: File) => upload(id, 'logo', file),
   uploadBanner: (id: string, file: File) => upload(id, 'banner', file),
+  removeLogo: (id: string) => requestData<EventDto>(`/api/v1/events/${id}/branding/logo`, { method: 'DELETE' }),
+  removeBanner: (id: string) => requestData<EventDto>(`/api/v1/events/${id}/branding/banner`, { method: 'DELETE' }),
 }
 
 function upload(id: string, kind: 'logo' | 'banner', file: File) {

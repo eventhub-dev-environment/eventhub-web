@@ -1,17 +1,29 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import { Spinner } from '@/components/ui'
 import { ApiError } from '@/lib/http'
 import { useAuthStore } from '@/store/auth'
 import type { AuthResponse } from '@/types/auth'
 
+function homeAfterLogin(auth: AuthResponse): string {
+  const canOpenPanel =
+    auth.roles.includes('PLATFORM_ADMIN') ||
+    auth.tenantRoles.some((assignment) => assignment.role === 'TENANT_ADMIN' || assignment.role === 'EVENT_ORGANIZER')
+  return canOpenPanel ? '/staff' : '/'
+}
+
 function useAuthSubmit(call: () => Promise<AuthResponse>) {
   const setSession = useAuthStore((s) => s.setSession)
   const navigate = useNavigate()
-  const from = (useLocation().state as { from?: string } | null)?.from ?? '/'
-  return useMutation({ mutationFn: call, onSuccess: (a) => { setSession(a); navigate(from, { replace: true }) } })
+  return useMutation({
+    mutationFn: call,
+    onSuccess: (auth) => {
+      setSession(auth)
+      navigate(homeAfterLogin(auth), { replace: true })
+    },
+  })
 }
 
 function ErrorBox({ error }: { error: unknown }) {
