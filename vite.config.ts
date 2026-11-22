@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
     server: {
+      host: true,
       port: 5173,
       proxy: {
         '/api': {

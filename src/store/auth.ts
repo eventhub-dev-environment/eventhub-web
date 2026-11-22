@@ -42,3 +42,8 @@ export const hasGlobalRole = (s: AuthState, role: GlobalRole) => s.roles.include
 export const hasTenantRole = (s: AuthState, ...roles: TenantRole[]) =>
   s.roles.includes('PLATFORM_ADMIN') ||
   s.tenantRoles.some((t) => t.tenantId === s.activeTenantId && roles.includes(t.role))
+
+/** Configuración del tenant. El organizador y el comprador no entran. */
+export const selectIsTenantAdmin = (s: AuthState) =>
+  s.roles.includes('PLATFORM_ADMIN') ||
+  s.tenantRoles.some((t) => t.tenantId === s.activeTenantId && t.role === 'TENANT_ADMIN')

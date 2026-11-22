@@ -38,7 +38,15 @@ async function toApiError(res: Response): Promise<ApiError> {
     503: 'Servicio no disponible, inténtalo en un momento.',
   }
   const message = body?.detail ?? body?.message ?? body?.title ?? fallback[res.status] ?? `Error ${res.status}`
-  return new ApiError(res.status, message, body?.invalidFields)
+  return new ApiError(res.status, message, body?.invalidFields ?? stringRecord(body?.errors))
+}
+
+/** event-service manda los errores de campo en `errors`; auth usa `invalidFields`. */
+function stringRecord(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const entries = Object.entries(value)
+  if (entries.length === 0 || entries.some(([, item]) => typeof item !== 'string')) return undefined
+  return Object.fromEntries(entries)
 }
 
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {

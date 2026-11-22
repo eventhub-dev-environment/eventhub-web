@@ -17,8 +17,8 @@ export const StatusBadge = ({ status }: { status: BookingStatus }) => (
   <span className={`badge ${STATUS[status][1]}`}>{STATUS[status][0]}</span>
 )
 
-export const Empty = ({ title, hint }: { title: string; hint?: string }) => (
-  <div className="empty"><strong>{title}</strong>{hint && <p>{hint}</p>}</div>
+export const Empty = ({ title, hint, icon }: { title: string; hint?: string; icon?: React.ReactNode }) => (
+  <div className="empty">{icon}<strong>{title}</strong>{hint && <p>{hint}</p>}</div>
 )
 
 /** Spotlight que sigue el cursor: expone --mx/--my al CSS. */
