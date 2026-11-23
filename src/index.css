@@ -280,6 +280,15 @@ main:has(.catalog) { max-width: none; width: 100%; margin-inline: 0; padding-inl
   background: color-mix(in srgb, var(--tint, var(--accent)) 8%, var(--solid));
 }
 .pass-code p { margin: 0; color: var(--muted); font-size: .82rem; max-width: 18ch; }
+.pass-code .btn { padding: 8px 12px; font-size: .85rem; }
+.pass-code .error { width: 100%; font-size: .82rem; }
+
+/* Retorno de Stripe */
+.checkout { max-width: 560px; margin: 0 auto; }
+.checkout .panel { position: static; }
+.checkout-summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 600; }
+.checkout-wait { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--muted); }
+.checkout-wait .spinner { border-color: var(--line); border-top-color: var(--accent); }
 .pass-qr { position: relative; width: min(168px, 100%); aspect-ratio: 1; padding: 8px; border-radius: 18px; background: #fff; }
 .pass-qr-img { width: 100%; height: 100%; display: block; }
 .pass-qr-logo {
@@ -287,13 +296,13 @@ main:has(.catalog) { max-width: none; width: 100%; margin-inline: 0; padding-inl
   object-fit: contain; background: #fff; border-radius: 10px; padding: 3px; box-shadow: 0 0 0 4px #fff;
 }
 .pass-qr.is-inactive { filter: grayscale(1); opacity: .55; }
-.pass-switch { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.pass-switch { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 8px; width: 100%; }
 .pass-switch button {
   border: 1px solid var(--line); background: var(--solid); color: inherit; border-radius: 999px;
   padding: 6px 10px; font: 600 .78rem var(--body); cursor: pointer;
 }
 .pass-switch button:disabled { opacity: .4; cursor: not-allowed; }
-.pass-switch span { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.pass-switch span { order: -1; flex-basis: 100%; text-align: center; color: var(--muted); font-size: .78rem; white-space: nowrap; }
 .staff-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .staff-actions .btn { padding: 10px 14px; font-size: .92rem; text-decoration: none; }
 .event-copy { flex: 1; min-width: 0; }

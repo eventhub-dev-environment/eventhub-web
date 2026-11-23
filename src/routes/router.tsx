@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { Layout } from '@/pages/Layout'
 import { LoginPage, RegisterPage } from '@/pages/AuthPages'
+import { CheckoutCancelPage, CheckoutSuccessPage } from '@/pages/CheckoutPages'
 import { EventDetailPage } from '@/pages/EventDetailPage'
 import { EventsPage } from '@/pages/EventsPage'
 import { MyBookingsPage } from '@/pages/MyBookingsPage'
@@ -26,6 +27,8 @@ export const router = createBrowserRouter([
           { path: '/', element: <EventsPage /> },
           { path: '/events/:id', element: <EventDetailPage /> },
           { path: '/me/bookings', element: <MyBookingsPage /> },
+          { path: '/checkout/success', element: <CheckoutSuccessPage /> },
+          { path: '/checkout/cancel', element: <CheckoutCancelPage /> },
           {
             element: <RequireTenantRole roles={['TENANT_ADMIN', 'EVENT_ORGANIZER']} />,
             children: [

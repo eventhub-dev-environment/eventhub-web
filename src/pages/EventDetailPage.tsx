@@ -5,6 +5,7 @@ import { bookingsApi } from '@/api/bookings'
 import { eventsApi } from '@/api/events'
 import { paymentsApi } from '@/api/payments'
 import { Skeleton, Spinner } from '@/components/ui'
+import { savePendingCheckout } from '@/lib/checkout'
 import { dateParts, money } from '@/lib/format'
 import type { RegistrationField } from '@/types/event'
 
@@ -39,6 +40,7 @@ export function EventDetailPage() {
         totalPrice: total,
         attendeeData,
       })
+      savePendingCheckout({ bookingId: booking.id, eventId: ev.id })
       return paymentsApi.createCheckoutSession(booking.id)
     },
     onSuccess: (session) => window.location.assign(session.checkoutUrl),

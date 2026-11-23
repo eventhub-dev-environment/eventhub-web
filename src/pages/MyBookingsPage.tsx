@@ -1,14 +1,15 @@
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { toDataURL } from 'qrcode'
 import { bookingsApi } from '@/api/bookings'
 import { eventsApi } from '@/api/events'
 import { notificationsApi } from '@/api/notifications'
 import { Icon } from '@/components/Icon'
-import { Empty, Skeleton, StatusBadge } from '@/components/ui'
+import { Empty, Skeleton, Spinner, StatusBadge } from '@/components/ui'
 import { dateParts, money } from '@/lib/format'
-import { useAuthStore } from '@/store/auth'
+import { hasGlobalRole, useAuthStore } from '@/store/auth'
 import type { Booking, BookingStatus, Ticket } from '@/types/booking'
 import type { EventDto } from '@/types/event'
 
@@ -52,6 +53,23 @@ function eventWhen(event: EventDto | undefined, sessionId?: string): string | un
   if (!event) return undefined
   const session = event.sessions?.find((item) => item.id === sessionId)
   return session?.startsAt ?? event.eventDate
+}
+
+const IN_REFUND: BookingStatus[] = ['CANCELLATION_REQUESTED', 'CANCELLATION_REVIEW_REQUIRED']
+
+/**
+ * Las mismas reglas que booking-service aplica en POST /bookings/{id}/cancel.
+ * Devuelve null si se puede cancelar, o el motivo para mostrarlo en lugar del botón.
+ */
+function cancelBlock(booking: Booking, tickets: Ticket[]): string | null {
+  if (!booking.paymentTransactionId) return 'Esta reserva no tiene un pago para reembolsar.'
+  if (!booking.refundCutoffAt || Date.now() >= new Date(booking.refundCutoffAt).getTime()) {
+    return 'El plazo para cancelar y pedir el reembolso ya terminó.'
+  }
+  if (tickets.length !== booking.quantity || tickets.some((ticket) => ticket.status !== 'ISSUED')) {
+    return 'Solo se puede cancelar si ninguna entrada se ha usado.'
+  }
+  return null
 }
 
 /** El mismo texto que lleva el QR del correo, para que el check-in lo pueda leer. */
@@ -107,6 +125,7 @@ function Pass({
   tickets,
   ticketsLoading,
   index,
+  isCustomer,
 }: {
   booking: Booking
   event?: EventDto
@@ -114,9 +133,16 @@ function Pass({
   tickets: Ticket[]
   ticketsLoading: boolean
   index: number
+  isCustomer: boolean
 }) {
   const [cursor, setCursor] = useState(0)
   const [logoOk, setLogoOk] = useState(true)
+  const [confirm, setConfirm] = useState(false)
+  const queryClient = useQueryClient()
+  const cancel = useMutation({
+    mutationFn: () => bookingsApi.cancel(booking.id),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
+  })
   const when = eventWhen(event, booking.sessionId)
   const date = when ? dateParts(when) : null
   const title = event?.title
@@ -124,6 +150,11 @@ function Pass({
   const tint = event?.branding?.primaryColor
   const ticket = tickets[Math.min(cursor, Math.max(tickets.length - 1, 0))]
   const showQr = booking.status === 'CONFIRMED'
+  const canOfferCancel = isCustomer && showQr && !ticketsLoading
+  const blocked = canOfferCancel ? cancelBlock(booking, tickets) : null
+  const failure = cancel.error instanceof Error ? cancel.error.message : ''
+
+  const accept = () => cancel.mutate(undefined, { onSettled: () => setConfirm(false) })
 
   return (
     <article className="pass" style={{ '--i': index, '--tint': tint } as React.CSSProperties}>
@@ -166,7 +197,11 @@ function Pass({
         {showQr && ticketsLoading && <Skeleton h={168} />}
         {showQr && !ticketsLoading && ticket && <TicketCode ticket={ticket} logoUrl={logoOk ? logo : undefined} />}
         {showQr && !ticketsLoading && !ticket && <p>El código se está generando.</p>}
-        {!showQr && <p>El QR aparece cuando la reserva queda confirmada.</p>}
+        {IN_REFUND.includes(booking.status) && <p>Reembolso en proceso. Tus entradas ya no son válidas.</p>}
+        {booking.status === 'CANCELLED' && <p>Reserva cancelada.</p>}
+        {!showQr && !IN_REFUND.includes(booking.status) && booking.status !== 'CANCELLED' && (
+          <p>El QR aparece cuando la reserva queda confirmada.</p>
+        )}
         {showQr && tickets.length > 1 && (
           <div className="pass-switch">
             <button type="button" disabled={cursor === 0} onClick={() => setCursor((n) => Math.max(0, n - 1))}>Anterior</button>
@@ -174,13 +209,44 @@ function Pass({
             <button type="button" disabled={cursor >= tickets.length - 1} onClick={() => setCursor((n) => Math.min(tickets.length - 1, n + 1))}>Siguiente</button>
           </div>
         )}
+        {canOfferCancel && !blocked && (
+          <>
+            <button type="button" className="btn ghost danger" disabled={cancel.isPending} onClick={() => { cancel.reset(); setConfirm(true) }}>
+              Cancelar reserva
+            </button>
+            {booking.refundCutoffAt && <p>Puedes cancelar hasta el {dateParts(booking.refundCutoffAt).long}.</p>}
+          </>
+        )}
+        {canOfferCancel && blocked && <p>{blocked}</p>}
+        {failure && <div className="error" role="alert">{failure}</div>}
       </div>
+
+      {confirm && createPortal(
+        <div className="confirm-backdrop" onClick={() => { if (!cancel.isPending) setConfirm(false) }}>
+          <div className="confirm" role="alertdialog" aria-modal="true" aria-labelledby={`cancel-${booking.id}`} onClick={(event) => event.stopPropagation()}>
+            <h2 id={`cancel-${booking.id}`}>Cancelar reserva</h2>
+            <p>
+              Se solicitará el reembolso de {money(booking.totalPrice)} y tus {booking.quantity === 1 ? 'entrada dejará' : 'entradas dejarán'} de
+              ser {booking.quantity === 1 ? 'válida' : 'válidas'}. No se puede deshacer.
+            </p>
+            <div className="confirm-actions">
+              <button type="button" className="btn ghost" disabled={cancel.isPending} onClick={() => setConfirm(false)}>Volver</button>
+              <button type="button" className="btn" disabled={cancel.isPending} onClick={accept}>
+                {cancel.isPending && <Spinner />}
+                Cancelar reserva
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </article>
   )
 }
 
 export function MyBookingsPage() {
   const userId = userIdFromToken(useAuthStore((s) => s.token))
+  const isCustomer = useAuthStore((s) => hasGlobalRole(s, 'CUSTOMER'))
   const bookings = useQuery({ queryKey: ['bookings', userId], queryFn: () => bookingsApi.byUser(userId!), enabled: !!userId })
   const notifications = useQuery({ queryKey: ['notifications'], queryFn: notificationsApi.mine })
   const [q, setQ] = useState('')
@@ -269,6 +335,7 @@ export function MyBookingsPage() {
               tickets={ticketQuery?.data ?? []}
               ticketsLoading={!!ticketQuery?.isPending}
               index={index}
+              isCustomer={isCustomer}
             />
           )
         })}
