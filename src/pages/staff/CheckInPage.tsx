@@ -2,10 +2,10 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
-import jsQR from 'jsqr'
 import { bookingsApi } from '@/api/bookings'
 import { Icon } from '@/components/Icon'
 import { Spinner } from '@/components/ui'
+import { readQr } from '@/lib/qrReader'
 import type { Ticket, TicketStatus } from '@/types/booking'
 
 const TICKET_STATUS: Record<TicketStatus, string> = {
@@ -39,31 +39,6 @@ function canUseLiveCamera(): boolean {
   return window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
 }
 
-async function findQr(file: File): Promise<string | null> {
-  const bitmap = await createImageBitmap(file)
-  try {
-    const longest = Math.max(bitmap.width, bitmap.height)
-    for (const maxSide of [1600, 800]) {
-      const scale = Math.min(1, maxSide / longest)
-      const width = Math.max(1, Math.round(bitmap.width * scale))
-      const height = Math.max(1, Math.round(bitmap.height * scale))
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d', { willReadFrequently: true })
-      if (!ctx) return null
-      ctx.drawImage(bitmap, 0, 0, width, height)
-      const image = ctx.getImageData(0, 0, width, height)
-      const code = jsQR(image.data, image.width, image.height, { inversionAttempts: 'attemptBoth' })
-      if (code) return code.data
-      if (scale === 1) break
-    }
-    return null
-  } finally {
-    bitmap.close()
-  }
-}
-
 export function CheckInPage() {
   const [ticketId, setTicketId] = useState('')
   const [qrCodeHash, setQrCodeHash] = useState('')
@@ -88,10 +63,11 @@ export function CheckInPage() {
     if (!scanning || !video || !stream) return
     video.srcObject = stream
     void video.play()
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     let frame = 0
+    let active = true
+    let busy = false
     const stop = () => {
+      active = false
       cancelAnimationFrame(frame)
       stream.getTracks().forEach((track) => track.stop())
       streamRef.current = null
@@ -99,20 +75,29 @@ export function CheckInPage() {
       setScanning(false)
     }
     stopScan.current = stop
+    // La lectura es asíncrona: no se lanza otra mientras la anterior sigue en curso.
     const tick = () => {
       frame = requestAnimationFrame(tick)
-      if (!ctx || video.readyState < 2) return
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      ctx.drawImage(video, 0, 0)
-      const image = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const code = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' })
-      if (!code) return
-      stop()
-      applyCode(code.data)
+      if (busy || video.readyState < 2) return
+      busy = true
+      readQr(video)
+        .then((raw) => {
+          if (!raw || !active) return
+          stop()
+          applyCode(raw)
+        })
+        .catch(() => {
+          if (!active) return
+          stop()
+          setScanError('No se pudo iniciar el lector de QR. Revisa tu conexión e inténtalo de nuevo.')
+        })
+        .finally(() => {
+          busy = false
+        })
     }
     tick()
     return () => {
+      active = false
       cancelAnimationFrame(frame)
     }
   }, [scanning])
@@ -140,7 +125,7 @@ export function CheckInPage() {
   const readImage = async (file: File) => {
     setScanError('')
     try {
-      const raw = await findQr(file)
+      const raw = await readQr(file)
       if (!raw) {
         setScanError('No se encontró un QR en la foto. Acerca el código y toma otra.')
         return
